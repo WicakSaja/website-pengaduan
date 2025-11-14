@@ -1,160 +1,199 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = "http://localhost:5000";
 
-// Tipe data PengaduanDetail
+interface Lampiran {
+    id: number;
+    filePath: string;
+}
+
 interface PengaduanDetail {
     id: number;
     judul: string;
-    isi_laporan: string;
+    deskripsi: string;
     lokasi: string;
-    tanggal_pengaduan: string;
-    kategori?: { nama: string };
-    status: 'pending' | 'proses' | 'selesai' | 'ditolak';
-    komentar?: Array<{ by: string; message: string; tanggal: string }>;
-    bukti?: string[];
+    createdAt: string;
+    status: "pending" | "diproses" | "selesai"; // FIX STATUS
+    lampiran: Lampiran[];
 }
 
-// Komponen Timeline Step (Style Baru)
-const TimelineStep = ({ title, description, date, isComplete }: { title: string; description?: string; date?: string; isComplete: boolean }) => (
-    // Wrapper relatif, padding kiri untuk garis, margin bawah
-    <div className={`relative mb-6 pl-8`}>
-        {/* Lingkaran ikon (lebih besar, warna solid/outline) */}
-        <div className={`absolute left-0 top-1 h-5 w-5 rounded-full border-2 border-[#0060A9] ${isComplete ? 'bg-[#0060A9]' : 'bg-white'}`}></div>
-        {/* Konten (padding kiri agar tidak tertimpa ikon) */}
-        <div className="pl-3">
-            {/* Judul Status (Biru Tua, Bold) */}
-            <h4 className={`font-semibold text-[#004A80]`}>{title}</h4>
-            {/* Deskripsi/Komentar (Abu-abu) */}
-            {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
-            {/* Tanggal (Abu-abu muda, jika ada) */}
-            {date && <p className="mt-1 text-xs text-gray-400">{date ? new Date(date).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'}) : ''}</p>}
-        </div>
-    </div>
-);
+export default function DetailRiwayatPage() {
+    const params = useParams();
+    const id = params.id;
 
+    const { token } = useAuth();
 
-export default function DetailLacakPage() {
-    const router = useRouter();
-    const params = useParams<{ id?: string }>();
-    const id = params?.id;
-    const { user, token, isLoading: authLoading } = useAuth();
-
-    const [pengaduan, setPengaduan] = useState<PengaduanDetail | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [data, setData] = useState<PengaduanDetail | null>(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // useEffect Fetch Data (Logika tetap sama)
+    // =============================
+    // STATUS CHECK FIXED
+    // =============================
+    const isComplete = (step: string) => {
+        if (!data) return false;
+
+        // urutan yang benar sesuai database
+        const order = ["pending", "diproses", "selesai"];
+
+        return order.indexOf(data.status) >= order.indexOf(step);
+    };
+
     useEffect(() => {
-        // ... (Kode fetch GET /api/pengaduan/saya/{id} Anda yang sudah ada) ...
-        const isValidId = id && /^\d+$/.test(id); if (!isValidId) { setIsLoading(false); setError("ID invalid."); return; }
-        const fetchDetail = async () => { if (!token) { setError("Harus login."); setIsLoading(false); return; } setIsLoading(true); setError(null); try { const response = await fetch(`${API_BASE_URL}/api/pengaduan/saya/${id}`, { headers: { 'Authorization': `Bearer ${token}` } }); if (!response.ok) { const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` })); throw new Error(errorData.message || `Gagal (${response.status})`); } const result = await response.json(); if (result.success && result.data && result.data.pengaduan) { setPengaduan(result.data.pengaduan); } else { throw new Error(result.message || `Data ID ${id} tidak ditemukan.`); } } catch (err: any) { console.error("Fetch Error:", err); setError(err.message || 'Server error.'); if (err.message?.includes('Unauthorized')) { setError("Sesi invalid."); } } finally { setIsLoading(false); } };
-        if (!authLoading && isValidId) { fetchDetail(); } else if (!authLoading && !token && isValidId) { setError("Harus login."); setIsLoading(false); } else if (!isValidId && !authLoading) { setIsLoading(false); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, token, authLoading]);
+        if (!token) return;
 
-    // Fungsi helper timeline (Tetap sama)
-    const isStepComplete = (stepStatus: PengaduanDetail['status'], currentStatus: PengaduanDetail['status'] | undefined): boolean => { /* ... */ if (!currentStatus || currentStatus === 'ditolak') return false; const order = ['pending', 'proses', 'selesai']; return order.indexOf(currentStatus) >= order.indexOf(stepStatus); };
-    const findComment = (keyword: string): { message?: string; tanggal?: string } => { /* ... */ const comment = pengaduan?.komentar?.find(k => k.message?.toLowerCase().includes(keyword.toLowerCase())); return { message: comment?.message, tanggal: comment?.tanggal }; };
-    const formatTanggal = (tanggalString: string | undefined): string => { /* ... */ if (!tanggalString) return '-'; try { return new Date(tanggalString).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }); } catch { return tanggalString; } }
+        const fetchDetail = async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/pengaduan/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
 
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.message);
 
-    // === Render Logic ===
-    if (isLoading || authLoading) return <div className="flex min-h-screen items-center justify-center pt-28">Loading detail pengaduan...</div>;
-    if (error) return ( <div className="flex min-h-screen flex-col items-center justify-center pt-28 text-center"><p className="text-red-600">Error: {error}</p>{/* Tombol kembali bisa ditambahkan */}</div> );
-    if (!pengaduan) return ( <div className="flex min-h-screen flex-col items-center justify-center pt-28 text-center"><p>Data pengaduan tidak ditemukan.</p>{/* Tombol kembali */}</div> );
+                setData(result.data);
+            } catch (err: any) {
+                setError(err.message || "Gagal memuat detail.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // Jika data ada
+        fetchDetail();
+    }, [id, token]);
+
+    if (loading)
+        return <div className="pt-28 text-center">Memuat detail...</div>;
+
+    if (error)
+        return <div className="pt-28 text-center text-red-600">{error}</div>;
+
+    if (!data)
+        return <div className="pt-28 text-center">Data tidak ditemukan</div>;
+
     return (
-        // Wrapper utama (background putih, padding atas, relative untuk pattern)
-        <main className="bg-white py-16 lg:py-24 pt-32 min-h-screen relative overflow-hidden">
-             {/* Placeholder Pola Dekoratif */}
-             {/* <div className="absolute top-0 right-0 w-60 h-96 pattern-top-right opacity-50 -z-0"></div> */}
-             {/* <div className="absolute bottom-20 left-0 w-40 h-80 pattern-bottom-left opacity-50 -z-0"></div> */}
+        <main className="pt-32 min-h-screen bg-white">
 
-             <div className="container mx-auto max-w-3xl px-6 relative z-10"> {/* Kontainer di atas pola */}
-                 {/* Judul Halaman */}
-                <h2 className="mb-10 text-center text-3xl font-bold text-[#004A80] md:text-4xl">
-                    DETAIL PENGADUAN
-                </h2>
+            <h1 className="text-3xl font-bold text-[#004A80] text-center mb-10">
+                DETAIL PENGADUAN
+            </h1>
 
-                {/* Kartu Putih Tunggal */}
-                <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-lg md:p-10">
+            <div className="max-w-5xl mx-auto p-6">
+                <div className="bg-white border rounded-xl shadow-xl p-10">
 
-                    {/* Bagian Pengaduan Anda */}
-                    <h3 className="mb-6 text-center text-lg font-semibold text-[#0060A9]">
+                    {/* === BAGIAN HEADER === */}
+                    <h2 className="text-center text-lg font-semibold text-[#0060A9] mb-8">
                         PENGADUAN ANDA
-                    </h3>
-                    <div className="mb-8 flex flex-col items-center gap-6 md:flex-row md:items-start">
-                         <div
-                            className="h-24 w-24 flex-shrink-0 rounded-lg border bg-gray-200 bg-cover bg-center md:h-32 md:w-32" // Ukuran gambar lebih kecil
-                            style={{ backgroundImage: `url(${pengaduan.bukti?.[0] ? API_BASE_URL + pengaduan.bukti[0] : '/placeholder-image.png'})` }}
-                         ></div>
-                         <div className="flex-1 text-center md:text-left">
-                             {/* Ganti format: Label di kiri, value di kanan */}
-                             <div className="space-y-2 text-sm">
-                                 <p><span className="inline-block w-24 font-semibold text-[#0060A9]">Judul:</span> {pengaduan.judul}</p>
-                                 <p><span className="inline-block w-24 font-semibold text-[#0060A9]">Kategori:</span> {pengaduan.kategori?.nama || '-'}</p>
-                                 <p><span className="inline-block w-24 font-semibold text-[#0060A9]">Tanggal:</span> {formatTanggal(pengaduan.tanggal_pengaduan)}</p>
-                                 <p><span className="inline-block w-24 font-semibold text-[#0060A9]">Lokasi:</span> {pengaduan.lokasi}</p>
-                                 <p><span className="inline-block w-24 font-semibold text-[#0060A9] align-top">Deskripsi:</span> <span className="inline-block w-[calc(100%-7rem)]">{pengaduan.isi_laporan}</span></p> {/* Layout deskripsi */}
-                             </div>
-                         </div>
+                    </h2>
+
+                    <div className="flex flex-col md:flex-row gap-8">
+
+                        {/* FOTO */}
+                        <div
+                            className="h-40 w-56 bg-gray-200 bg-cover bg-center rounded"
+                            style={{
+                                backgroundImage: `url(${
+                                    data.lampiran?.[0]
+                                        ? API_BASE_URL + data.lampiran[0].filePath.replace(/\\/g, "/")
+                                        : "/placeholder-image.png"
+                                })`
+                            }}
+                        ></div>
+
+                        {/* INFO */}
+                        <div className="text-gray-700 space-y-2 text-sm">
+                            <p><strong>Judul Masalah:</strong> {data.judul}</p>
+                            <p><strong>Deskripsi Masalah:</strong> {data.deskripsi}</p>
+                            <p><strong>Tanggal:</strong> {new Date(data.createdAt).toLocaleDateString("id-ID")}</p>
+                            <p><strong>Lokasi:</strong> {data.lokasi}</p>
+                        </div>
                     </div>
 
-                    {/* Garis Pemisah Biru */}
-                    <hr className="my-8 border-t border-[#007BCC]" />
+                    <hr className="my-10 border-[#0060A9]/40" />
 
-                    {/* Timeline Status */}
-                    <h3 className="mb-6 text-center text-lg font-semibold text-[#0060A9]">
-                        STATUS DAN TANGGAPAN
-                    </h3>
-                    {/* Wrapper Timeline dengan Garis Biru */}
-                    <div className="relative pl-5 before:absolute before:left-[0.5rem] before:top-1 before:bottom-1 before:w-0.5 before:bg-[#0060A9] before:rounded-full">
-                        {/* Timeline Steps */}
-                        <TimelineStep
-                            title="Diterima"
-                            isComplete={isStepComplete('pending', pengaduan.status)}
-                            date={pengaduan.tanggal_pengaduan}
-                        />
-                        <TimelineStep
-                            title="Diproses" // Mengganti 'Diverifikasi' sesuai desain
-                            description={findComment('proses').message || (isStepComplete('proses', pengaduan.status) ? 'Laporan sedang diproses.' : '')} // Tampilkan deskripsi default jika complete tapi tdk ada komen
-                            isComplete={isStepComplete('proses', pengaduan.status)}
-                            date={findComment('proses').tanggal}
-                        />
-                        <TimelineStep
-                            title="Selesai"
-                            description={findComment('selesai').message || (isStepComplete('selesai', pengaduan.status) ? 'Laporan telah diselesaikan.' : '')}
-                            isComplete={isStepComplete('selesai', pengaduan.status)}
-                            date={findComment('selesai').tanggal}
-                        />
-                        {/* Status Ditolak (jika ada) */}
-                        {pengaduan.status === 'ditolak' && (
-                             <TimelineStep
-                                title="Ditolak"
-                                description={findComment('ditolak').message || 'Laporan ditolak.'}
-                                isComplete={true}
-                                date={findComment('ditolak').tanggal}
-                             />
-                        )}
+                  {/* ============================= */}
+{/*          STATUS UI           */}
+{/* ============================= */}
+
+<h2 className="text-center text-lg font-semibold text-[#0060A9] mb-6">
+    STATUS DAN TANGGAPAN
+</h2>
+
+<div className="relative">
+
+    {/* GARIS VERTICAL */}
+    <div className="absolute left-[7px] top-2 bottom-11 w-[3px] 
+        bg-gray-300">
+    </div>
+
+    {/* Step 1 */}
+    <div className="relative flex gap-4 items-start mb-6">
+        {/* Lingkaran */}
+        <div className={`h-4 w-4 rounded-full border-2 z-10
+            ${isComplete("pending") ? "bg-[#0060A9] border-[#0060A9]" : "border-gray-400"}
+        `}></div>
+
+        {/* Teks */}
+        <div>
+            <p className="font-semibold text-[#004A80]">Diterima</p>
+            <p className="text-sm text-gray-700">Laporan diterima</p>
+        </div>
+    </div>
+
+    {/* Step 2 */}
+    <div className="relative flex gap-4 items-start mb-6">
+        <div className={`h-4 w-4 rounded-full border-2 z-10
+            ${isComplete("diproses") ? "bg-[#0060A9] border-[#0060A9]" : "border-gray-400"}
+        `}></div>
+
+        <div>
+            <p className="font-semibold text-[#004A80]">Diverifikasi</p>
+            <p className="text-sm text-gray-700">Laporan telah diverifikasi</p>
+        </div>
+    </div>
+
+    {/* Step 3 */}
+    <div className="relative flex gap-4 items-start mb-6">
+        <div className={`h-4 w-4 rounded-full border-2 z-10
+            ${isComplete("diproses") ? "bg-[#0060A9] border-[#0060A9]" : "border-gray-400"}
+        `}></div>
+
+        <div>
+            <p className="font-semibold text-[#004A80]">Dalam Proses</p>
+            <p className="text-sm text-gray-700">Laporan valid, diteruskan ke tim teknisi</p>
+        </div>
+    </div>
+
+    {/* Step 4 */}
+    <div className="relative flex gap-4 items-start">
+        <div className={`h-4 w-4 rounded-full border-2 z-10
+            ${isComplete("selesai") ? "bg-[#0060A9] border-[#0060A9]" : "border-gray-400"}
+        `}></div>
+
+        <div>
+            <p className="font-semibold text-[#004A80]">Selesai</p>
+            <p className="text-sm text-gray-700">Laporan sudah diperbaiki oleh tim teknisi</p>
+        </div>
+    </div>
+
+</div>
+
+
+                    <div className="text-center mt-10">
+                        <Link href="/riwayat">
+                            <button className="bg-[#0060A9] text-white px-8 py-2 rounded-full hover:bg-[#004a80]">
+                                Kembali
+                            </button>
+                        </Link>
                     </div>
-                 </div>
 
-                {/* Tombol Kembali (Biru Kapsul) */}
-                <div className="mt-8 text-center"> {/* Tengahkan tombol */}
-                    <Link href="/riwayat"> {/* Arahkan ke Riwayat? Atau Lacak? */}
-                        <button className="rounded-full bg-[#0060A9] px-8 py-3 text-sm font-semibold text-white hover:bg-[#004a80]">
-                            Kembali
-                        </button>
-                    </Link>
                 </div>
             </div>
         </main>
     );
-}   
+}

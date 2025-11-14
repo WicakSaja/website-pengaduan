@@ -1,95 +1,152 @@
-"use client"; 
+  "use client";
 
-import { useState, useEffect } from 'react';
-import StatCard from '@/components/admin/StatCard';
-import { useRouter } from 'next/navigation';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Pastikan semua ikon yang dibutuhkan diimpor
-import { faBullhorn, faClock, faCheckCircle, faTimesCircle, faUserShield, faUsers } from '@fortawesome/free-solid-svg-icons'; 
+  import { useState, useEffect } from "react";
+  import { useRouter } from "next/navigation";
+  import StatCard from "@/components/admin/StatCard";
 
-const API_BASE_URL = 'http://localhost:5000'; 
+  import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+  import {
+    faBullhorn,
+    faClock,
+    faCheckCircle,
+    faTimesCircle,
+    faUsers,
+    faUserShield,
+  } from "@fortawesome/free-solid-svg-icons";
 
-// Tipe data (tetap sama)
-interface AdminUser { id: number; nama: string; role: 'admin' | 'master_admin'; }
-interface StatistikLaporan { total?: number; pending?: number; proses?: number; selesai?: number; ditolak?: number; }
-interface StatistikSistem { total_users?: number; total_pengaduan?: number; active_admins?: number; }
+  const API_BASE_URL = "http://localhost:5000";
 
-export default function AdminDashboardPage() {
-  const router = useRouter();
-  const [statsLaporan, setStatsLaporan] = useState<StatistikLaporan | null>(null);
-  const [statsSistem, setStatsSistem] = useState<StatistikSistem | null>(null);
-  const [userRole, setUserRole] = useState<AdminUser['role'] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  interface AdminUser {
+    id: number;
+    nama_lengkap: string;
+    role: "admin" | "master_admin";
+  }
 
-  // Fetch data (logika tetap sama)
-  useEffect(() => {
-    // ... (Kode fetch data Anda yang sudah ada, memastikan userRole di-set) ...
-     const fetchData = async () => { setIsLoading(true); setError(null); const token = localStorage.getItem('adminToken'); const userString = localStorage.getItem('adminUser'); if (!token || !userString) { /*... redirect ...*/ setIsLoading(false); return; } let role: AdminUser['role'] | null = null; try { const userData: AdminUser = JSON.parse(userString); role = userData.role; setUserRole(role); } catch (e) { /*... handle error, redirect ...*/ setIsLoading(false); return; } try { const resLaporan = await fetch(`${API_BASE_URL}/api/dashboard/statistik-laporan`, { headers: { 'Authorization': `Bearer ${token}` } }); if(!resLaporan.ok) throw new Error('Gagal ambil stats laporan'); const dataLaporan = await resLaporan.json(); if (dataLaporan.success) { setStatsLaporan(dataLaporan.data); } else { throw new Error(dataLaporan.message || 'Gagal stats laporan'); } if (role === 'master_admin') { const resSistem = await fetch(`${API_BASE_URL}/api/master/dashboard/statistik-sistem`, { headers: { 'Authorization': `Bearer ${token}` } }); if(!resSistem.ok) throw new Error('Gagal ambil stats sistem'); const dataSistem = await resSistem.json(); if (dataSistem.success) { setStatsSistem(dataSistem.data); } else { console.error(dataSistem.message || 'Gagal stats sistem'); } } } catch (err: any) { setError(err.message || 'Server error.'); console.error(err); if (err.message.includes('Unauthorized')) { /*... handle logout ...*/ } } finally { setIsLoading(false); } }; fetchData();
-  }, [router]);
+  interface StatistikLaporan {
+    total: number;
+    pending: number;
+    proses: number;
+    selesai: number;
+    ditolak: number;
+  }
 
-  // Render Logic
-  if (isLoading) { return <p>Loading data statistik...</p>; }
-  if (error) { return <p className="text-red-600">Error: {error}</p>; }
+  interface StatistikSistem {
+    total_users: number;
+    total_pengaduan: number;
+    active_admins: number;
+  }
 
-  // Tentukan kelas grid berdasarkan role
-  const gridColsClass = userRole === 'master_admin' 
-      ? 'grid-cols-1 gap-6 md:grid-cols-3' // 3 kolom untuk Master Admin
-      : 'grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4'; // 4 kolom (atau 2) untuk Admin biasa
+  export default function AdminDashboardPage() {
+    const router = useRouter();
 
-  return (
-    <div>
-      {/* Grid Statistik (kelas dinamis) */}
-      <div className={`grid ${gridColsClass}`}> 
-        
-        {/* Kartu Umum (Tampil untuk semua admin) */}
-        <StatCard 
-          title="Total Pengaduan" 
-          value={statsLaporan?.total ?? 0} 
-          icon={<FontAwesomeIcon icon={faBullhorn} />} 
-        />
-         <StatCard 
-          title="Pengaduan Selesai" 
-          value={statsLaporan?.selesai ?? 0} 
-          icon={<FontAwesomeIcon icon={faCheckCircle} />} 
-        />
-        {/* Urutan kartu di Master Admin berbeda, kita ikuti desain Master Admin */}
-         {userRole === 'master_admin' && statsSistem && (
-            <StatCard 
-                title="Total Pengguna Aktif" 
-                value={statsSistem.total_users ?? 0} 
-                icon={<FontAwesomeIcon icon={faUsers} />} 
-            />
-         )}
+    const [laporan, setLaporan] = useState<StatistikLaporan | null>(null);
+    const [sistem, setSistem] = useState<StatistikSistem | null>(null);
+    const [role, setRole] = useState<AdminUser["role"] | null>(null);
 
-        <StatCard 
-          title="Pengaduan Diproses" 
-          value={statsLaporan?.proses ?? 0} 
-          icon={<FontAwesomeIcon icon={faClock} />} 
-        />
-        <StatCard 
-          title="Pengaduan Ditolak" 
-          value={statsLaporan?.ditolak ?? 0} 
-          icon={<FontAwesomeIcon icon={faTimesCircle} />} 
-        />
-        
-        {/* Kartu Khusus Master Admin */}
-        {userRole === 'master_admin' && statsSistem && (
-            <StatCard 
-                title="Total Admin" 
-                value={statsSistem.active_admins ?? 0} 
-                icon={<FontAwesomeIcon icon={faUserShield} />} 
-            />
-        )}
+    const [loading, setLoading] = useState(true);
 
-         {/* Jika Admin biasa & ingin 4 kolom, kartu Selesai & Ditolak bisa dipindah ke sini */}
-         {userRole === 'admin' && (
-             <>
-                 {/* <StatCard title="Pengaduan Selesai" ... /> */}
-                 {/* <StatCard title="Pengaduan Ditolak" ... /> */}
-             </>
-         )}
+    useEffect(() => {
+      const load = async () => {
+        const token = localStorage.getItem("adminToken");
+        const userData = localStorage.getItem("adminUser");
+
+        if (!token || !userData) {
+          router.push("/admin/login");
+          return;
+        }
+
+        const admin: AdminUser = JSON.parse(userData);
+        setRole(admin.role);
+
+        // Statistik Laporan
+        const r1 = await fetch(`${API_BASE_URL}/api/dashboard/statistik-laporan`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data1 = await r1.json();
+        setLaporan(data1.data);
+
+        // Statistik Sistem → hanya Master Admin
+        if (admin.role === "master_admin") {
+          const r2 = await fetch(
+            `${API_BASE_URL}/api/master/dashboard/statistik-sistem`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (r2.ok) {
+            const data2 = await r2.json();
+            setSistem(data2.data);
+          }
+        }
+
+        setLoading(false);
+      };
+
+      load();
+    }, [router]);
+
+    if (loading) {
+      return <p className="p-6 text-center">Memuat dashboard...</p>;
+    }
+
+    // Grid Master Admin harus 3 kolom seperti gambar
+    const gridClass =
+      role === "master_admin"
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+        : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6";
+
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-[#004A80] mb-6">
+          Dashboard Admin
+        </h1>
+
+        <div className={gridClass}>
+          {/* ----------- Kartu Untuk Semua Admin ----------- */}
+
+          <StatCard
+            title="Total Pengaduan"
+            value={laporan?.total ?? 0}
+            icon={<FontAwesomeIcon icon={faBullhorn} />}
+          />
+
+          <StatCard
+            title="Pengaduan Selesai"
+            value={laporan?.selesai ?? 0}
+            icon={<FontAwesomeIcon icon={faCheckCircle} />}
+          />
+
+          <StatCard
+            title="Pengaduan Diproses"
+            value={laporan?.proses ?? 0}
+            icon={<FontAwesomeIcon icon={faClock} />}
+          />
+
+          <StatCard
+            title="Pengaduan Ditolak"
+            value={laporan?.ditolak ?? 0}
+            icon={<FontAwesomeIcon icon={faTimesCircle} />}
+          />
+
+          {/* ----------- Kartu Tambahan untuk MASTER ADMIN ----------- */}
+          {role === "master_admin" && (
+            <>
+              <StatCard
+                title="Total Pengguna Aktif"
+                value={sistem?.total_users ?? 0}
+                icon={<FontAwesomeIcon icon={faUsers} />}
+              />
+
+              <StatCard
+                title="Total Admin"
+                value={sistem?.active_admins ?? 0}
+                icon={<FontAwesomeIcon icon={faUserShield} />}
+              />
+            </>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

@@ -1,148 +1,117 @@
-// src/app/admin/login/page.tsx
-"use client"; // 1. Ubah jadi Client Component
+"use client";
 
-import Link from 'next/link';
-import { useState } from 'react'; // 2. Import useState
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-// --- Base URL API Anda ---
-const API_BASE_URL = 'http://localhost:5000'; // 3. Base URL Backend
+const API_BASE_URL = "http://localhost:5000";
 
-// Style reusable
-const labelStyle = "block text-xs font-medium text-gray-500 mb-1 ml-4";
-const inputStyle = "w-full p-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900";
-
-export default function AdminLoginPage() {
+export default function AdminLogin() {
   const router = useRouter();
 
-  // 4. State untuk form, loading, dan error
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // 5. Fungsi handleSubmit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
 
-    try {
-      // Panggil endpoint login
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
 
-      const result = await response.json();
+    const result = await res.json();
 
-      if (result.success && result.data && result.data.user) {
-        // --- 6. CEK ROLE ---
-        const userRole = result.data.user.role;
-        if (userRole === 'admin' || userRole === 'master_admin') { // Sesuaikan 'master_admin' jika nama role beda
-          // --- 7. SUKSES (Admin / Master Admin) ---
-          // Simpan token & user (sementara di localStorage, bisa dipisah nanti)
-          localStorage.setItem('adminToken', result.data.token); 
-          localStorage.setItem('adminUser', JSON.stringify(result.data.user));
-
-          alert('Login Admin Berhasil!');
-          router.push('/admin/dashboard'); // Arahkan ke dashboard admin
-        } else {
-          // Jika login berhasil tapi bukan admin/master
-          setError('Akses ditolak. Anda bukan Admin.');
-          // Mungkin logout paksa jika token user biasa terlanjur tersimpan
-          localStorage.removeItem('token'); 
-          localStorage.removeItem('user');
-        }
-      } else {
-        // GAGAL LOGIN
-        setError(result.message || 'Login gagal. Periksa email dan password.');
-      }
-    } catch (err) {
-      // GAGAL KONEKSI
-      setError('Tidak dapat terhubung ke server.');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+    if (!res.ok || !result.success) {
+      setError("Login gagal. Periksa username & password.");
+      return;
     }
-  };
+
+    // FIX TERPENTING
+    localStorage.setItem("adminToken", result.token);
+    localStorage.setItem("adminUser", JSON.stringify(result.data));
+
+    router.push("/admin/dashboard");
+
+  } catch (err) {
+    setError("Tidak dapat terhubung ke server.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
-    // Wrapper utama (Desain disamakan dengan login user)
-    <section className="relative flex items-center justify-center min-h-screen">
-      
-      {/* Background Image (DENGAN BLUR) */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center filter blur-sm"
+    <div className="relative min-h-screen flex items-center justify-center">
+
+      {/* Background blur */}
+      <div
+        className="absolute inset-0 bg-cover bg-center blur-sm"
         style={{ backgroundImage: "url('/hero-bg.png')" }}
-      ></div>
-      <div className="absolute inset-0 bg-black/30"></div>
+      />
 
-      {/* Kartu Form */}
-      <div className="relative z-10 w-full max-w-md p-6 mt-16">
-        <form 
-          className="bg-white p-8 md:p-10 rounded-2xl shadow-xl"
-          onSubmit={handleSubmit} // 8. Hubungkan form
-        >
-          
-          <h1 className="text-2xl font-bold text-center mb-2 text-gray-900">
-            MASUK (Admin)
-          </h1>
-          <p className="text-center text-sm text-gray-600 mb-8">
-            Silakan login untuk mengakses dashboard
-          </p>
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-white/40 backdrop-blur-sm" />
 
-          <div className="space-y-5">
-            {/* Field Email */}
-            <div>
-              <label htmlFor="email" className={labelStyle}>Email</label>
-              <input 
-                type="email" 
-                id="email" 
-                placeholder="email@admin.com" 
-                className={inputStyle} 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            {/* Field Password */}
-            <div>
-              <label htmlFor="password" className={labelStyle}>Password</label>
-              <input 
-                type="password" 
-                id="password" 
-                placeholder="••••••••" 
-                className={inputStyle} 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            
-            {/* Tampilkan Error */}
-            {error && (
-              <div className="text-red-600 text-sm text-center">
-                {error}
-              </div>
-            )}
-            
-            {/* Submit Button */}
-            <button 
-              type="submit" 
-              className="w-full bg-gray-900 text-white py-3 rounded-full font-semibold hover:bg-gray-700 transition duration-300 mt-4 disabled:bg-gray-400"
-              disabled={isLoading} 
-            >
-              {isLoading ? 'Loading...' : 'Masuk'}
-            </button>
+      {/* Box Login */}
+      <div className="relative z-10 bg-white w-[350px] p-8 rounded-xl shadow-xl border border-gray-200">
+
+        <h1 className="text-center text-xl font-bold mb-6 text-[#004A80]">
+          LOGIN ADMIN
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          {/* Username */}
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">
+              Username
+            </label>
+            <input
+              type="text"
+              placeholder="Masukkan username admin"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#0060A9]"
+              required
+            />
           </div>
 
+          {/* Password */}
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="Masukkan password admin"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-[#0060A9]"
+              required
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <p className="text-center text-sm text-red-600">{error}</p>
+          )}
+
+          {/* Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#0060A9] text-white py-2 rounded-md hover:bg-[#004A80] transition"
+          >
+            {loading ? "Memproses..." : "Masuk"}
+          </button>
         </form>
       </div>
-    </section>
+    </div>
   );
 }
