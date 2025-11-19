@@ -13,7 +13,7 @@ export default function LacakPage() {
     };
 
     return (
-        <main className="pt-28 min-h-screen bg-white relative overflow-hidden">
+        <main className="pt-28 min-h-screen bg-transparant relative overflow-hidden">
 
             {/* Bagian PANDUAN */}
             <h1 className="text-3xl font-bold text-[#004A80] text-center mb-8">

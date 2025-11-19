@@ -95,7 +95,7 @@ export default function DataPengaduanPage() {
         </h2>
 
         {/* SEARCH */}
-        <div className="mb-6 flex justify-start">
+        <div className="mb-6 flex justify-start text-black">
           <input
             type="text"
             placeholder="Cari nama, NIK, atau kategori..."

@@ -243,9 +243,6 @@ export default function Home() {
     }
   };
 
-  // ==========================================================
-  // RENDER LOADING STATE
-  // ==========================================================
   if (authLoading)
     return (
       <div className="flex min-h-screen items-center justify-center text-xl text-[#0060A9]">
@@ -253,9 +250,6 @@ export default function Home() {
       </div>
     );
 
-  // ==========================================================
-  // RENDER UTAMA
-  // ==========================================================
   return (
     <>
       {/* HeroSection: Asumsi sudah responsif */}
@@ -334,7 +328,7 @@ export default function Home() {
       {/* --- BAGIAN FORM PENGADUAN --- */}
       <section
         id="form-pengaduan"
-        className="bg-white py-16 lg:py-24 relative overflow-hidden"
+        className="bg-transparant py-16 lg:py-24 relative overflow-hidden"
       >
         <div className="container mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-10">

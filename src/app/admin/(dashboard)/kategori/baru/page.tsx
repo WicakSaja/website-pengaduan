@@ -6,6 +6,64 @@ import Link from "next/link";
 
 const API_BASE_URL = "http://localhost:5000";
 
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}
+
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, isLoading }: ConfirmationModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fadeIn">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100 border border-gray-100">
+        <div className="p-6 text-center">
+          {/* Ikon Plus/Tambah */}
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-[#0060A9]">
+            <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="h-8 w-8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </div>
+          
+          <h3 className="mb-2 text-xl font-bold text-gray-800">Tambah Kategori?</h3>
+          <p className="text-gray-500 text-sm">
+            Kategori baru akan ditambahkan ke dalam sistem dan dapat digunakan untuk pelaporan.
+          </p>
+        </div>
+        
+        <div className="flex border-t border-gray-100 bg-gray-50 px-6 py-4 gap-3">
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="w-1/2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="w-1/2 rounded-lg bg-[#0060A9] px-4 py-2 text-sm font-bold text-white hover:bg-[#004a80] transition shadow-md disabled:opacity-50 flex justify-center items-center"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Menyimpan...
+              </>
+            ) : (
+              "Ya, Tambah"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function TambahKategoriPage() {
   const router = useRouter();
 
@@ -13,6 +71,7 @@ export default function TambahKategoriPage() {
   const [deskripsi, setDeskripsi] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false); // State Modal
 
   // Cek token sebelum render
   useEffect(() => {
@@ -20,8 +79,22 @@ export default function TambahKategoriPage() {
     if (!token) router.push("/admin/login");
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  // Handler Form (Buka Modal)
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    // Validasi sederhana
+    if (!nama.trim() || !deskripsi.trim()) {
+      setError("Nama dan Deskripsi wajib diisi.");
+      return;
+    }
+    
+    setIsModalOpen(true); // Buka popup konfirmasi
+  };
+
+  // Handler API (Eksekusi Simpan)
+  const processSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -30,11 +103,12 @@ export default function TambahKategoriPage() {
 
       if (!token) {
         setError("Anda belum login sebagai admin.");
+        setLoading(false);
         return;
       }
 
-      // FIX endpoint yang benar
-      const response = await fetch(`${API_BASE_URL}/api/kategori`, {
+      // PENTING: Pastikan URL mengarah ke /api/admin/kategori
+      const response = await fetch(`${API_BASE_URL}/api/admin/kategori`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -48,16 +122,16 @@ export default function TambahKategoriPage() {
 
       const result = await response.json();
 
-      // Backend kategori TIDAK punya field success
       if (!response.ok) {
-        setError(result.message || "Gagal menambah kategori");
-        return;
+        throw new Error(result.message || "Gagal menambah kategori");
       }
 
+      setIsModalOpen(false); // Tutup modal
       router.push("/admin/kategori");
 
-    } catch (err) {
-      setError("Tidak dapat terhubung ke server.");
+    } catch (err: any) {
+      setError(err.message || "Tidak dapat terhubung ke server.");
+      setIsModalOpen(false); // Tutup modal jika error agar user bisa perbaiki input
     } finally {
       setLoading(false);
     }
@@ -65,13 +139,23 @@ export default function TambahKategoriPage() {
 
   return (
     <main className="pt-28 px-4 flex justify-center">
+      
+      {/* --- MODAL DIRENDER DI SINI --- */}
+      <ConfirmationModal 
+        isOpen={isModalOpen}
+        isLoading={loading}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={processSubmit}
+      />
+
       <div className="bg-white shadow-lg border rounded-xl p-8 w-[380px]">
 
         <h2 className="text-center text-xl font-bold text-[#004A80] mb-6">
           Tambah Data Kategori
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Form memanggil handleFormSubmit (untuk buka modal) */}
+        <form onSubmit={handleFormSubmit} className="space-y-5">
 
           {/* INPUT NAMA */}
           <div>
@@ -110,7 +194,7 @@ export default function TambahKategoriPage() {
 
           {/* ERROR */}
           {error && (
-            <p className="text-center text-red-600 text-sm">{error}</p>
+            <p className="text-center text-red-600 text-sm bg-red-50 p-2 rounded">{error}</p>
           )}
 
           {/* BUTTON TAMBAH */}
@@ -118,16 +202,16 @@ export default function TambahKategoriPage() {
             type="submit"
             disabled={loading}
             className="w-full bg-[#0060A9] text-white py-2 rounded-full text-sm 
-                       hover:bg-[#004A80] transition font-semibold"
+                       hover:bg-[#004a80] transition font-semibold shadow-md disabled:opacity-70"
           >
-            {loading ? "Memproses..." : "Tambah"}
+            Tambah
           </button>
         </form>
 
         {/* BUTTON KEMBALI */}
         <div className="text-center mt-4">
           <Link href="/admin/kategori">
-            <button className="bg-[#0060A9] text-white px-6 py-1.5 rounded-full text-sm hover:bg-[#004A80] transition">
+            <button className="bg-gray-100 text-gray-600 px-6 py-1.5 rounded-full text-sm hover:bg-gray-200 transition font-medium border border-gray-300">
               Kembali
             </button>
           </Link>

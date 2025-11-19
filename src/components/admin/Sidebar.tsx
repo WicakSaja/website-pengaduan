@@ -3,10 +3,17 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
+import { useRouter, usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Import ikon Font Awesome yang sesuai, TAMBAHKAN faBullhorn
-import { faThLarge, faFileAlt, faTags, faUsersCog, faUserShield, faChartLine, faSignOutAlt, faBullhorn } from '@fortawesome/free-solid-svg-icons';
+import { 
+    faThLarge, 
+    faFileAlt, 
+    faTags, 
+    faUsersCog, 
+    faUserShield, 
+    faChartLine, 
+    faBullhorn 
+} from '@fortawesome/free-solid-svg-icons';
 
 interface AdminUser { id: number; nama: string; role: 'admin' | 'master_admin'| 'pimpinan'; }
 
@@ -15,23 +22,24 @@ const SidebarLink = ({ href, icon, label, isActive }: { href: string; icon: any;
     <li>
         <Link
             href={href}
-            // Style link: abu muda, hover biru tua+putih. Jika aktif: biru tua+putih
-            className={`flex items-center rounded-lg p-3 font-medium text-blue-100 transition duration-300 ease-in-out hover:bg-[#0060A9] hover:text-white ${isActive ? 'bg-[#0060A9] text-white font-semibold' : ''}`}
+            className={`flex items-center rounded-lg p-3 font-medium transition-all duration-300 ease-in-out 
+            ${isActive 
+                ? 'bg-white text-[#0096FF] font-bold shadow-md scale-105' // Aktif: Putih, Teks Biru Cerah
+                : 'text-white hover:bg-white/20 hover:text-white' // Non-Aktif: Putih, Hover Transparan
+            }`}
             aria-current={isActive ? 'page' : undefined}
         >
-            <FontAwesomeIcon icon={icon} className="mr-3 w-5 text-center text-lg" /> {/* Teks ikon biru muda */}
+            <FontAwesomeIcon icon={icon} className="mr-3 w-5 text-center text-lg" />
             <span>{label}</span>
         </Link>
     </li>
 );
 
-
 const Sidebar = () => {
     const router = useRouter();
-    const pathname = usePathname(); // Hook untuk mendapatkan path URL saat ini
+    const pathname = usePathname();
     const [userRole, setUserRole] = useState<AdminUser['role'] | null>(null);
 
-    // Baca role dari localStorage
     useEffect(() => {
         const adminUserString = localStorage.getItem('adminUser');
         if (adminUserString) {
@@ -42,29 +50,24 @@ const Sidebar = () => {
         }
     }, []);
 
-    // Fungsi Logout
     const handleLogout = () => {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminUser');
-        // Panggil API logout jika perlu
         router.replace('/admin/login');
     };
 
-    // if (!userRole) return <aside className="h-screen w-64 flex-shrink-0 bg-[#007BCC]"></aside>;
-
     return (
-        // Sidebar: Background biru muda, lebar tetap
-        <aside className="flex h-screen w-64 flex-shrink-0 flex-col bg-[#007BCC] p-4 text-white">
-            {/* Logo tidak ada di desain ini, hanya menu */}
-
+        // UBAH DI SINI: Ganti bg-[#005086] menjadi bg-[#0096FF] (Biru Cerah)
+        <aside className="flex h-full w-64 flex-shrink-0 flex-col bg-[#0096FF] p-4 text-white shadow-xl z-20">
+            
             {/* Navigasi */}
-            <nav className="flex-1">
+            <nav className="flex-1 mt-4"> 
                 <ul className="space-y-2">
-                    {/* Gunakan Komponen SidebarLink */}
+                    
                     <SidebarLink href="/admin/dashboard" icon={faThLarge} label="DASHBOARD" isActive={pathname === '/admin/dashboard'} />
+                    
                     <SidebarLink href="/admin/laporan" icon={faFileAlt} label="DATA PENGADUAN" isActive={pathname.startsWith('/admin/laporan')} />
                     
-                    {/* ===== TAMBAHAN: KELOLA PENGUMUMAN ===== */}
                     <SidebarLink href="/admin/pengumuman" icon={faBullhorn} label="KELOLA PENGUMUMAN" isActive={pathname.startsWith('/admin/pengumuman')} />
                     
                     <SidebarLink href="/admin/kategori" icon={faTags} label="DATA KATEGORI" isActive={pathname.startsWith('/admin/kategori')} />
@@ -72,15 +75,18 @@ const Sidebar = () => {
                     {/* Menu Khusus Master Admin */}
                     {userRole === 'master_admin' && (
                         <>
+                            <div className="my-4 border-t border-white/30"></div>
+                            <p className="px-3 text-xs font-bold text-blue-100 mb-2 uppercase tracking-wider opacity-80">Master Menu</p>
+                            
                             <SidebarLink href="/admin/kelola-pengguna" icon={faUsersCog} label="KELOLA PENGGUNA" isActive={pathname.startsWith('/admin/kelola-pengguna')} />
+                            
                             <SidebarLink href="/admin/kelola-admin" icon={faUserShield} label="KELOLA ADMIN" isActive={pathname.startsWith('/admin/kelola-admin')} />
+                            
                             <SidebarLink href="/admin/statistik" icon={faChartLine} label="STATISTIK" isActive={pathname === '/admin/statistik'} />
                         </>
                     )}
                 </ul>
             </nav>
-
-            {/* Tombol Logout tidak ada di sidebar desain ini, dipindah ke header */}
         </aside>
     );
 };

@@ -1,9 +1,8 @@
-// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -14,15 +13,22 @@ import {
   faChevronDown,
   faFileSignature,
   faSearch,
-  faClockRotateLeft, // ICON HISTORY
+  faClockRotateLeft,
+  faSignOutAlt,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Scroll untuk anchor
+// Fungsi Scroll Halus
 const scrollToElement = (id: string) => {
+  if (typeof window === 'undefined') return;
+  
   const element = document.getElementById(id);
   if (element) {
+    const headerOffset = 100;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.scrollY - headerOffset;
+
     window.scrollTo({
-      top: element.offsetTop - 100,
+      top: offsetPosition,
       behavior: "smooth",
     });
   }
@@ -31,6 +37,7 @@ const scrollToElement = (id: string) => {
 const Navbar = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -46,33 +53,26 @@ const Navbar = () => {
   };
 
   const handleAnchorClick = (e: any, href: string) => {
-    e.preventDefault();
-    const id = href.split("/#")[1];
-    if (id) scrollToElement(id);
+    const targetId = href.split("#")[1];
+    if (pathname === "/") {
+      e.preventDefault();
+      scrollToElement(targetId);
+    } 
     setIsMobileMenuOpen(false);
+    setIsDropdownOpen(false);
   };
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
       const target = event.target as Node;
-
       if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
       }
-
-      const isToggleClicked = document
-        .querySelector(".mobile-menu-toggle")
-        ?.contains(target);
-
-      if (
-        mobileMenuRef.current &&
-        !mobileMenuRef.current.contains(target) &&
-        !isToggleClicked
-      ) {
+      const isToggleClicked = document.querySelector(".mobile-menu-toggle")?.contains(target);
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target) && !isToggleClicked) {
         setIsMobileMenuOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
@@ -84,25 +84,29 @@ const Navbar = () => {
   ];
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-transparent">
-      <div className="container mx-auto max-w-5xl px-4 md:px-6 py-2">
-        <nav className="flex items-center justify-between rounded-full bg-[#0060A9]/80 backdrop-blur-sm px-6 py-3 text-white shadow-lg md:px-8 md:py-4 transition duration-300">
-
-          {/* LOGO */}
-          <Link href="/" className="text-xl font-bold md:text-2xl">
-            LaporPak
+    // Container Header dengan padding atas agar "mengapung"
+    <header className="fixed top-0 w-full z-50 pt-6 px-4 transition-all">
+      <div className="container mx-auto max-w-6xl flex flex-col md:flex-row gap-4">
+      
+        <nav className="flex-1 bg-[#005086] rounded-full px-8 py-4 shadow-xl flex items-center justify-between relative z-20">
+          
+        {/* LOGO */}
+          <Link href="/" className="text-2xl font-extrabold tracking-wide">
+            {/* Lapor: Biru Muda & Tidak Miring */}
+            <span className="text-sky-300 not-italic">Lapor</span>
+            
+            {/* Pak: Putih & Miring */}
+            <span className="text-white italic">Pak</span>
           </Link>
 
-          {/* MENU DESKTOP */}
-          <ul className="hidden md:flex items-center space-x-8">
+          {/* MENU DESKTOP (Tengah) */}
+          <ul className="hidden md:flex items-center gap-10 mx-auto absolute left-1/2 transform -translate-x-1/2">
             {links.map((link) => (
               <li key={link.name}>
                 <Link
                   href={link.href}
-                  onClick={
-                    link.isAnchor ? (e) => handleAnchorClick(e, link.href) : undefined
-                  }
-                  className="opacity-90 hover:opacity-100 transition"
+                  onClick={link.isAnchor ? (e) => handleAnchorClick(e, link.href) : undefined}
+                  className="text-white text-base font-medium hover:text-blue-200 transition duration-200"
                 >
                   {link.name}
                 </Link>
@@ -110,150 +114,99 @@ const Navbar = () => {
             ))}
           </ul>
 
-          {/* PROFILE + MOBILE */}
-          <div className="flex items-center space-x-3" ref={dropdownRef}>
-            {user ? (
+          {/* HAMBURGER (Mobile Only) */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="mobile-menu-toggle md:hidden p-2 text-white hover:bg-white/10 rounded-full transition"
+          >
+            <FontAwesomeIcon icon={isMobileMenuOpen ? faXmark : faBars} className="h-6 w-6" />
+          </button>
+        </nav>
+
+        <div 
+          className="hidden md:flex bg-[#005086] rounded-full px-3 py-3 shadow-xl items-center justify-center min-w-[80px] relative z-20" 
+          ref={dropdownRef}
+        >
+          {user ? (
+            // --- JIKA SUDAH LOGIN ---
+            <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="relative flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full bg-white text-[#0060A9] hover:bg-gray-200 transition"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white hover:bg-white/10 transition duration-300"
               >
-                <FontAwesomeIcon icon={faUser} />
-                <FontAwesomeIcon
-                  icon={faChevronDown}
-                  className={`absolute -bottom-1 -right-1 text-xs transition-transform duration-300 ${
-                    isDropdownOpen ? "rotate-180" : "rotate-0"
-                  } bg-[#0060A9] rounded-full p-[1px]`}
-                />
+                {/* Ikon User Sederhana (Seperti di gambar) */}
+                <FontAwesomeIcon icon={faUser} className="text-lg" />
               </button>
-            ) : (
-              <div className="hidden md:flex space-x-4">
-                <Link href="/login" className="px-5 py-2 text-sm rounded-full hover:bg-white/20">
-                  Masuk
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-5 py-2 text-sm bg-white text-[#0060A9] rounded-full hover:bg-gray-200"
-                >
-                  Daftar
-                </Link>
-              </div>
-            )}
 
-            {/* HAMBURGER */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="mobile-menu-toggle md:hidden p-2 rounded-md hover:bg-white/20"
-            >
-              <FontAwesomeIcon icon={isMobileMenuOpen ? faXmark : faBars} className="h-6 w-6" />
-            </button>
+              {/* DROPDOWN MENU */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 top-14 w-56 rounded-xl bg-white shadow-2xl ring-1 ring-black/5 animate-fadeIn overflow-hidden">
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Akun</p>
+                    <p className="text-sm font-bold text-[#005086] truncate">
+                      {user.nama || user.nama_lengkap || "Pengguna"}
+                    </p>
+                  </div>
 
-            {/* DROPDOWN PROFILE */}
-            {isDropdownOpen && user && (
-              <div className="absolute right-4 md:right-6 top-16 md:top-20 w-48 rounded-md bg-[#004A80] shadow-lg ring-1 ring-black/10 animate-fadeIn z-50">
-                <div className="px-4 py-3 border-b border-blue-900">
-                  <p className="text-sm font-medium text-white">Profil</p>
-                  <p className="text-xs text-gray-300 truncate">
-                    {user.nama || user.nama_lengkap || "Pengguna"}
-                  </p>
+                  <div className="py-1">
+                    <Link href="/riwayat" onClick={() => setIsDropdownOpen(false)} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#005086] transition">
+                      <FontAwesomeIcon icon={faClockRotateLeft} className="w-4 h-4 mr-3 opacity-70" />
+                      Riwayat
+                    </Link>
+                    
+                    <div className="border-t border-gray-100 my-1"></div>
+
+                    <button onClick={handleLogout} className="w-full text-left flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition">
+                      <FontAwesomeIcon icon={faSignOutAlt} className="w-4 h-4 mr-3 opacity-70" />
+                      Logout
+                    </button>
+                  </div>
                 </div>
+              )}
+            </div>
+          ) : (
+            // --- JIKA BELUM LOGIN ---
+            <Link href="/login" className="px-4 py-1 text-sm font-bold text-white hover:text-blue-200 transition whitespace-nowrap">
+              Masuk
+            </Link>
+          )}
+        </div>
 
-                <div className="py-1">
-                  {/* Lapor Baru */}
-                  <Link
-                    href="/#form-pengaduan"
-                    onClick={(e) => {
-                      handleAnchorClick(e, "/#form-pengaduan");
-                      setIsDropdownOpen(false);
-                    }}
-                    className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-[#0060A9]"
-                  >
-                    <FontAwesomeIcon icon={faFileSignature} className="w-4 h-4 mr-3" />
-                    Lapor Baru
-                  </Link>
-
-                  {/* Lacak */}
-                  <Link
-                    href="/lacak"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-[#0060A9]"
-                  >
-                    <FontAwesomeIcon icon={faSearch} className="w-4 h-4 mr-3" />
-                    Lacak Aduan
-                  </Link>
-
-                  {/* RIWAYAT PENGADUAN — DITAMBAHKAN KEMBALI */}
-                  <Link
-                    href="/riwayat"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-[#0060A9]"
-                  >
-                    <FontAwesomeIcon icon={faClockRotateLeft} className="w-4 h-4 mr-3" />
-                    Riwayat Pengaduan
-                  </Link>
-
-                  <div className="border-t border-blue-900 my-1"></div>
-
-                  {/* Logout */}
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-[#0060A9]"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </nav>
       </div>
 
-      {/* MOBILE MENU */}
       <div
         ref={mobileMenuRef}
-        className={`md:hidden absolute w-full bg-[#0060A9]/95 backdrop-blur-sm shadow-lg transition-all duration-300 ${
-          isMobileMenuOpen ? "max-h-96 opacity-100 py-3" : "max-h-0 opacity-0 overflow-hidden"
+        className={`md:hidden absolute top-full left-0 w-full px-4 mt-2 transition-all duration-300 transform origin-top ${
+          isMobileMenuOpen ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0 pointer-events-none"
         }`}
       >
-        <div className="px-3 pt-2 pb-3 space-y-1 text-white">
+        <div className="bg-[#005086] rounded-2xl shadow-xl p-4 text-white space-y-2 border border-white/10">
           {links.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              onClick={
-                link.isAnchor ? (e) => handleAnchorClick(e, link.href) : undefined
-              }
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-[#004A80]"
+              onClick={link.isAnchor ? (e) => handleAnchorClick(e, link.href) : undefined}
+              className="block px-4 py-3 rounded-xl hover:bg-white/10 font-medium transition"
             >
               {link.name}
             </Link>
           ))}
+          
+          <div className="border-t border-white/20 my-2"></div>
 
-          {/* Masuk / Daftar */}
-          {!user && (
-            <div className="pt-2 border-t border-blue-700 space-y-2">
-              <Link
-                href="/login"
-                className="block w-full text-center py-2 rounded-full text-[#0060A9] bg-white font-semibold"
-              >
-                Masuk
+          {user ? (
+            <>
+              <Link href="/riwayat" className="block px-4 py-3 rounded-xl hover:bg-white/10 font-medium">
+                <FontAwesomeIcon icon={faClockRotateLeft} className="mr-2" /> Riwayat Saya
               </Link>
-              <Link
-                href="/register"
-                className="block w-full text-center py-2 rounded-full border border-white font-semibold"
-              >
-                Daftar
-              </Link>
-            </div>
-          )}
-
-          {/* Tambahkan RIWAYAT di mobile menu jika butuh */}
-          {user && (
-            <Link
-              href="/riwayat"
-              className="block mt-2 px-3 py-2 rounded-md text-base font-medium hover:bg-[#004A80]"
-            >
-              Riwayat Pengaduan
-            </Link>
+              <button onClick={handleLogout} className="w-full text-left px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-200 font-medium">
+                 Logout
+              </button>
+            </>
+          ) : (
+             <Link href="/login" className="block px-4 py-3 rounded-xl bg-white text-[#005086] font-bold text-center shadow-md">
+                Masuk / Daftar
+             </Link>
           )}
         </div>
       </div>

@@ -94,7 +94,7 @@ export default function DetailRiwayatPage() {
     return <div className="pt-28 text-center">Data tidak ditemukan</div>;
 
   return (
-    <main className="pt-32 min-h-screen bg-white">
+    <main className="pt-32 min-h-screen bg-transparant">
       <h1 className="text-3xl font-bold text-[#004A80] text-center mb-10">
         DETAIL PENGADUAN
       </h1>

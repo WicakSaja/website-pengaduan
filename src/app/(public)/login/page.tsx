@@ -21,39 +21,67 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setError(null);
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (response.ok) {
-      login(result.data.token, result.data.user);
-      toast.success('✅ Login berhasil!', { position: 'top-center' });
+      if (response.ok) {
+        login(result.data.token, result.data.user);
+        toast.custom((t) => (
+          <div
+            className={`${t.visible ? 'animate-enter' : 'animate-leave'} 
+              max-w-lg w-full bg-white shadow-2xl rounded-xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 border border-[#0060A9]`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <svg className="h-6 w-6 text-[#0060A9]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-base font-bold text-[#004A80]">
+                    Akses Diterima! 👋
+                  </p>
+                  <p className="mt-1 text-sm text-gray-700">
+                    Selamat datang, {username}. Anda akan dialihkan...
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ), {
+  
+            position: 'top-center',
+            duration: 1500, 
+        });
 
-      // Tambahkan delay agar toast sempat tampil
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
-    } else {
-      setError(result.message || 'Login gagal.');
-      toast.error(result.message || '❌ Login gagal.', { position: 'top-center' });
+        setTimeout(() => {
+          toast.dismiss(); 
+          router.push('/');
+        }, 1500);
+
+      } else {
+        setError(result.message || 'Login gagal.');
+        toast.error(result.message || 'Login gagal.', { position: 'top-center' });
+      }
+    } catch (err) {
+      setError('Tidak dapat terhubung ke server.');
+      toast.error(' Tidak dapat terhubung ke server.', { position: 'top-center' });
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    setError('Tidak dapat terhubung ke server.');
-    toast.error('⚠️ Tidak dapat terhubung ke server.', { position: 'top-center' });
-    console.error(err);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <>

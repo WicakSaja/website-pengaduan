@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* --------------------------
-   WARNA DASAR
---------------------------- */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -16,13 +13,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* DARK MODE */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
 
 /* Smooth Scroll */
 html {
@@ -30,8 +20,7 @@ html {
 }
 
 /* --------------------------
-   FIX: JANGAN PAKAI "background"
-   karena override semua Tailwind bg-*
+   GLOBAL BODY STYLES
 --------------------------- */
 body {
   background-color: var(--background);
