@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Tipe data untuk user (sesuai API Anda)
 interface User {
+  nama_lengkap: string;
   id: number;
   nama: string;
   role: 'masyarakat' | 'admin' | 'master_admin';

@@ -70,6 +70,7 @@ export default function DetailPengaduanPage({ params }: any) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>("");
+  const [loadingPdf, setLoadingPdf] = useState(false); 
   
   // State untuk Modal
   const [modal, setModal] = useState({
@@ -77,7 +78,7 @@ export default function DetailPengaduanPage({ params }: any) {
     title: "",
     message: "",
     type: "info" as "info" | "danger" | "success",
-    action: async () => {}, // Fungsi kosong default
+    action: async () => {},
   });
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -116,9 +117,7 @@ export default function DetailPengaduanPage({ params }: any) {
     fetchDetail();
   }, []);
 
-  // === LOGIKA API (Dipisahkan dari UI) ===
-
-  // API: Verifikasi
+ 
   const processVerifikasi = async (status: string) => {
     const token = localStorage.getItem("adminToken");
     setActionLoading(true);
@@ -216,6 +215,43 @@ export default function DetailPengaduanPage({ params }: any) {
     });
   };
 
+  const handlePrintPDF = async () => {
+    const token = localStorage.getItem("adminToken");
+    if (!token) return;
+    
+    setLoadingPdf(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/pengaduan/${id}/pdf`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal mengunduh PDF");
+      }
+
+      // Proses Blob untuk download file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Laporan-Pengaduan-${id}.pdf`; // Nama file saat didownload
+      document.body.appendChild(a);
+      a.click();
+      a.remove(); // Bersihkan elemen
+      window.URL.revokeObjectURL(url); // Bersihkan memori
+      
+    } catch (err: any) {
+      console.error(err);
+      alert("Gagal mencetak PDF: " + err.message);
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
   if (loading) return <div className="text-center mt-20">Memuat data...</div>;
   if (!data) return <div className="text-center mt-20">Data tidak ditemukan</div>;
 
@@ -237,6 +273,32 @@ export default function DetailPengaduanPage({ params }: any) {
           
           {/* HEADER */}
           <h2 className="text-center text-xl font-bold text-[#004A80] mb-8">Detail Data Pengaduan</h2>
+
+          {/* HEADER & DETAIL DATA */}
+        <div className="flex justify-between items-center mb-8">
+             <h2 className="text-xl font-bold text-[#004A80]">
+                Detail Data Pengaduan
+             </h2>
+             
+             {/* Tombol Print */}
+             <button
+                onClick={handlePrintPDF}
+                disabled={loadingPdf}
+                className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-semibold disabled:bg-gray-400"
+             >
+                {loadingPdf ? (
+                   "Memproses..."
+                ) : (
+                   <>
+                     {/* Ikon Print SVG */}
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 001.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+                     </svg>
+                     Cetak Laporan
+                   </>
+                )}
+             </button>
+        </div>
 
           {/* INFORMASI UTAMA */}
           <div className="space-y-5 text-sm">
