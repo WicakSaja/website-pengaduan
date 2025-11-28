@@ -169,10 +169,10 @@ export default function Home() {
         toast.error("Lokasi Dusun, RT, dan RW wajib dipilih.");
         return;
     }
-    if (!gambar) {
-        toast.error("Bukti pendukung (gambar) wajib dilampirkan.");
-        return;
-    }
+   if (!gambar) {
+  toast.error("Lampiran wajib diunggah (foto atau video).");
+  return;
+}
 
     setFormLoading(true);
 
@@ -296,7 +296,7 @@ export default function Home() {
                   )}
                   
                   {/* flex-grow agar teks mengisi ruang dan tombol tetap di bawah */}
-                  <p className="text-gray-700 whitespace-pre-line flex-grow text-sm line-clamp-3">
+                  <p className="text-gray-700 whitespace-pre-line grow text-sm line-clamp-3">
                     {item.isi}
                   </p>
                   
@@ -439,17 +439,18 @@ export default function Home() {
               {/* --- Bukti --- */}
               <div>
                 <label className={labelStyle}>Bukti Pendukung*</label>
-                <input
-                  type="file"
-                  id="bukti"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-[#0060A9] hover:file:bg-blue-100 mt-1"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                    Maksimal ukuran file: 5MB. Format: JPG, PNG.
-                </p>
+               <input
+  type="file"
+  id="bukti"
+  accept="image/*,video/*"
+  onChange={handleFileChange}
+  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-[#0060A9] hover:file:bg-blue-100 mt-1"
+  required
+/>
+<p className="text-xs text-gray-500 mt-1">
+  Maksimal ukuran file: 200MB. Format: JPG, PNG, MP4, MKV.
+</p>
+
               </div>
 
               {/* --- Tombol Submit --- */}

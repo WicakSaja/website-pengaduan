@@ -111,31 +111,39 @@ export default function RiwayatPage() {
 
                   {/* === GAMBAR LAMPIRAN UTAMA === */}
                   <div className="relative block h-40 w-full overflow-hidden group">
-                    <img
-                      src={
-                        item.lampiran?.[0]
-                          ? `${API_BASE_URL}${item.lampiran[0].filePath.replace(/\\/g, "/")}`
-                          : "/placeholder-image.png"
-                      }
-                      alt="Lampiran Utama"
-                      className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://via.placeholder.com/300x200?text=Gagal+Memuat";
-                      }}
-                    />
+                   {/* === MEDIA PREVIEW (Gambar atau Video) === */}
+{item.lampiran?.[0] ? (
+  item.lampiran[0].filePath.match(/\.(mp4|mkv|webm|avi)$/i) ? (
+    <video
+      controls
+      className="w-full h-full object-cover bg-black"
+      onError={(e) => {
+        (e.target as HTMLVideoElement).poster =
+          "https://via.placeholder.com/300x200?text=Video+Error";
+      }}
+    >
+      <source
+        src={`${API_BASE_URL}${item.lampiran[0].filePath.replace(/\\/g, "/")}`}
+        type="video/mp4"
+      />
+    </video>
+  ) : (
+    <img
+      src={`${API_BASE_URL}${item.lampiran[0].filePath.replace(/\\/g, "/")}`}
+      className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
+      onError={(e) => {
+        e.currentTarget.src =
+          "https://via.placeholder.com/300x200?text=Gagal+Memuat";
+      }}
+    />
+  )
+) : (
+  <img
+    src="/placeholder-image.png"
+    className="w-full h-full object-cover"
+  />
+)}
 
-                    {/* Overlay Hitam Halus saat Hover */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                       {/* Ikon Mata bisa ditambahkan di sini jika mau */}
-                    </div>
-
-                    {/* Badge Status di Atas Gambar */}
-                    <span
-                      className={`absolute top-3 right-3 px-3 py-1 text-[10px] font-bold tracking-wide rounded-full text-white ${getStatusBadge(item.status).bg} shadow-sm`}
-                    >
-                      {getStatusBadge(item.status).text}
-                    </span>
                   </div>
 
                   {/* === KONTEN TEKS === */}

@@ -340,29 +340,70 @@ export default function DetailPengaduanPage({ params }: any) {
             </div>
           </div>
 
-          {/* LAMPIRAN */}
-          <div className="border-b pb-3 mt-6">
-            <p className="font-semibold text-[#004A80] mb-2">Lampiran</p>
-            {data.lampiran && data.lampiran.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {data.lampiran.map((item: any, index: number) => {
-                  const imageUrl = `${API_BASE_URL}${item.filePath.replace(/\\/g, "/")}`;
-                  return (
-                    <a key={item.id} href={imageUrl} target="_blank" rel="noopener noreferrer" className="block group relative overflow-hidden rounded-lg border border-gray-200">
-                      <img
-                        src={imageUrl}
-                        alt={`Lampiran-${index}`}
-                        className="w-full h-32 object-cover transition duration-300 group-hover:scale-110"
-                        onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=Gagal"; }}
-                      />
-                    </a>
-                  );
-                })}
-              </div>
+         {/* LAMPIRAN */}
+<div className="border-b pb-3 mt-6">
+  <p className="font-semibold text-[#004A80] mb-2">Lampiran</p>
+  {data.lampiran && data.lampiran.length > 0 ? (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {data.lampiran.map((item: any, index: number) => {
+        // 1. Bersihkan Path URL
+        let cleanPath = item.filePath.replace(/\\/g, "/");
+        if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+        const fileUrl = `${API_BASE_URL}${cleanPath}`;
+
+        // 2. Cek apakah ini Video
+        const isVideo = cleanPath.match(/\.(mp4|mkv|webm|avi)$/i);
+
+        // 3. Helper untuk MIME Type (agar browser mengenali formatnya)
+        const getMimeType = (path: string) => {
+          if (path.endsWith(".webm")) return "video/webm";
+          if (path.endsWith(".mkv")) return "video/x-matroska";
+          return "video/mp4";
+        };
+
+        return (
+          <div
+            key={item.id}
+            className="block group relative overflow-hidden rounded-lg border border-gray-200 bg-gray-100"
+          >
+            {isVideo ? (
+              // === JIKA VIDEO ===
+              <video
+                controls
+                preload="metadata"
+                className="w-full h-32 object-cover bg-black"
+              >
+                <source src={fileUrl} type={getMimeType(cleanPath)} />
+                Browser tidak mendukung video.
+              </video>
             ) : (
-              <p className="text-gray-500 text-sm italic">Tidak ada lampiran.</p>
+              // === JIKA GAMBAR ===
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={fileUrl}
+                  alt={`Lampiran-${index}`}
+                  className="w-full h-32 object-cover transition duration-300 group-hover:scale-110"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://via.placeholder.com/150?text=Gagal+Memuat";
+                  }}
+                />
+                {/* Overlay Text untuk Gambar */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center pointer-events-none">
+                  <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black/50 px-2 py-1 rounded">
+                    Klik untuk memperbesar
+                  </span>
+                </div>
+              </a>
             )}
           </div>
+        );
+      })}
+    </div>
+  ) : (
+    <p className="text-gray-500 text-sm italic">Tidak ada lampiran.</p>
+  )}
+</div>
 
           {/* AREA TOMBOL AKSI */}
           <div className="mt-10 text-center">
@@ -398,7 +439,7 @@ export default function DetailPengaduanPage({ params }: any) {
                           onClick={openSelesaiModal}
                           className="bg-green-600 text-white px-8 py-3 rounded-full hover:bg-green-700 transition shadow-lg font-bold"
                       >
-                          ✅ Tandai SELESAI
+                           Tandai SELESAI
                       </button>
                   </div>
                 )}
@@ -413,7 +454,7 @@ export default function DetailPengaduanPage({ params }: any) {
                   onClick={openPersetujuanModal}
                   className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition shadow-lg font-bold"
                 >
-                  ✅ Setujui Pelaksanaan
+                   Setujui Pelaksanaan
                 </button>
               </div>
             )}

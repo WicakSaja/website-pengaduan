@@ -109,46 +109,72 @@ export default function DetailRiwayatPage() {
 
           <div className="flex flex-col md:flex-row gap-8">
 
-            {/* LAMPIRAN DIPINDAHKAN KE SINI */}
-            <div className="w-full md:w-1/2 flex flex-col gap-4">
+    {data.lampiran.map((lamp, index) => {
+  // 1. FIX URL: Pastikan ada slash pembatas agar URL valid
+  let cleanPath = lamp.filePath.replace(/\\/g, "/");
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+  const url = `${API_BASE_URL}${cleanPath}`;
 
-              {data.lampiran && data.lampiran.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {data.lampiran.map((item, index) => {
-                    const url = `${API_BASE_URL}${item.filePath.replace(/\\/g, "/")}`;
+  // Cek ekstensi file
+  const isVideo = cleanPath.match(/\.(mp4|mkv|webm|avi)$/i);
 
-                    return (
-                      <a
-                        key={item.id}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block group relative overflow-hidden rounded-lg border border-gray-300"
-                      >
-                        <img
-                          src={url}
-                          alt={`Lampiran-${index}`}
-                          className="w-full h-32 object-cover transition duration-300 group-hover:scale-110"
-                          onError={(e) =>
-                            (e.currentTarget.src =
-                              "https://via.placeholder.com/150?text=Gagal")
-                          }
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center">
-                          <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black/50 px-2 py-1 rounded">
-                            Lihat
-                          </span>
-                        </div>
-                      </a>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="w-full h-40 bg-gray-200 flex items-center justify-center text-gray-500 rounded-lg">
-                  Tidak ada lampiran
-                </div>
-              )}
-            </div>
+  // 2. HELPER: Tentukan tipe konten (MIME Type) yang benar
+  const getMimeType = (path: string) => {
+    const lower = path.toLowerCase();
+    if (lower.endsWith(".webm")) return "video/webm";
+    if (lower.endsWith(".mkv")) return "video/x-matroska";
+    return "video/mp4"; // Default
+  };
+
+  return (
+    <div
+      key={lamp.id}
+      className="relative overflow-hidden rounded-lg border border-gray-300 group"
+    >
+      {/* 🎥 VIDEO */}
+      {isVideo ? (
+        <video
+          controls
+          preload="metadata"
+          className="w-full h-32 object-cover bg-black"
+          // 3. FIX UTAMA: HAPUS onClick yang memaksa fullscreen!
+          // Biarkan kontrol bawaan browser menangani play/pause/fullscreen
+        >
+          <source src={url} type={getMimeType(cleanPath)} />
+          Browser Anda tidak mendukung tag video.
+        </video>
+      ) : (
+        // 🖼 GAMBAR
+        <img
+          src={url}
+          alt={`Lampiran-${index}`}
+          className="w-full h-32 object-cover transition duration-300 group-hover:scale-110 cursor-pointer"
+          onClick={() => window.open(url, "_blank")}
+          onError={(e) =>
+            (e.currentTarget.src =
+              "https://via.placeholder.com/150?text=Error")
+          }
+        />
+      )}
+
+      {/* TEXT HOVER (Hanya untuk gambar, video sudah punya kontrol sendiri) */}
+      {!isVideo && (
+        <div 
+          className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition flex items-center justify-center pointer-events-none"
+        >
+          <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black/50 px-2 py-1 rounded">
+            Lihat Gambar
+          </span>
+        </div>
+      )}
+    </div>
+  );
+})}
+
+
+
 
             {/* INFORMASI */}
             <div className="text-gray-700 space-y-2 text-sm">
