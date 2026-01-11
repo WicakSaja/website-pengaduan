@@ -65,7 +65,7 @@ const ConfirmationModal = ({ isOpen, title, message, type, onClose, onConfirm, i
 
 export default function DetailPengaduanPage({ params }: any) {
   const router = useRouter();
-  const { id } = params;
+  const id = params.id;
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
