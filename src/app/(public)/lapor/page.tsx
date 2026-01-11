@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation'; // Import useRouter
 import { useAuth } from '@/context/AuthContext'; 
 
-const API_BASE_URL = process.env.API_BASE || 'http://localhost:5000'; 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE; 
 
 // Style reusable (adaptasi)
 const inputStyle = "w-full px-4 py-3 border border-[#007BCC] rounded-lg text-base text-gray-700 focus:outline-none focus:border-[#0060A9] focus:ring-1 focus:ring-[#0060A9]"; 

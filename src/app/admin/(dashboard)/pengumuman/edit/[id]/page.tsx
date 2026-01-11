@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast"; // Gunakan Toast untuk notifikasi
 
-const API_BASE_URL = process.env.API_BASE || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 
 interface ConfirmationModalProps {
   isOpen: boolean;

@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 
 type BackendStatus =
   | "pending"

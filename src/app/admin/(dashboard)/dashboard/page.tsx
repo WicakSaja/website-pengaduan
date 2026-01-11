@@ -14,7 +14,7 @@
     faUserShield,
   } from "@fortawesome/free-solid-svg-icons";
 
-  const API_BASE_URL = process.env.API_BASE || 'http://localhost:5000';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 
   interface AdminUser {
     id: number;

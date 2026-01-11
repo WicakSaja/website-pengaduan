@@ -7,7 +7,7 @@ import HeroSection from "@/components/HeroSection";
 import { useAuth } from "@/context/AuthContext"; 
 import toast from "react-hot-toast";
 
-const API_BASE_URL = process.env.API_BASE || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 
 const labelStyle = "block mb-1 text-sm font-medium text-[#0060A9]";
 const inputStyle =

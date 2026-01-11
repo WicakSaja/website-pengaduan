@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 
-const API_BASE_URL = process.env.API_BASE || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 
 // Style Reusable
 const labelStyle = "block mb-1 text-sm font-medium text-[#0060A9]";

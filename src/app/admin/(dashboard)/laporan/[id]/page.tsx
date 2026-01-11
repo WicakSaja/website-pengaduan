@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE_URL = process.env.API_BASE || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
 
 interface LampiranItem {
   id: number;
