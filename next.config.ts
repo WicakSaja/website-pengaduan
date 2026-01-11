@@ -1,16 +1,17 @@
 import type { NextConfig } from "next";
+import "dotenv/config";
 
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "localhost",
-        port: "5000",
+        protocol: (process.env.NEXT_PUBLIC_BACKEND_PROTOCOL || "http") as "http" | "https",
+        hostname: (process.env.NEXT_PUBLIC_BACKEND_HOST || "localhost") as string,
+        port: (process.env.NEXT_PUBLIC_BACKEND_PORT || "5000") as string,
       },
       {
-        protocol: "https",
-        hostname: "via.placeholder.com",
+        protocol: (process.env.NEXT_PUBLIC_BACKEND_PROTOCOL || "http") as "http" | "https",
+        hostname: (process.env.NEXT_PUBLIC_BACKEND_HOST || "via.placeholder.com") as string,
       },
     ],
   },
